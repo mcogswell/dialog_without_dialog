@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css"/>
+        <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- Functions to help parse the URL query string for AMT data -->
+        <script>
+        function gup(name) {
+            var regexS = "[\\?&]" + name + "=([^&#]*)";
+            var regex = new RegExp(regexS);
+            var tmpURL = window.location.href;
+            var results = regex.exec(tmpURL);
+            if (results == null) {
+                return "";
+            } else {
+                return results[1];
+            }
+        }
+
+        function decode(strToDecode) {
+            return unescape(strToDecode.replace(/\+/g, " "));
+        }
+        </script>
+    </head>
+<body>
+
+<form id='mturk_form' action="MTURK_FORM_TO_SUBMIT" method="POST">
+    <input type="hidden" id="assignmentId" name="assignmentId" value='MTURK_ASSIGNMENT_ID'>
+    <input type="hidden" id="workerId" name="workerId" value='MTURK_WORKER_ID'>
+    <input type="hidden" name="numPairs" value="{{pair_data|length}}">
+
+<div class="container" id="main">
+    <div class="row justify-content-center mb-2">
+        <h3 class="col text-center">Please help us compare questions!</h3>
+    </div>
+    <div class="row justify-content-center mb-2">
+        <button type="button" id="instruction-toggle" class="btn btn-outline-secondary">Show / Hide Instructions</button>
+    </div>
+    <div class="row justify-content-center mb-2">
+        <div id="main-instructions" class="card bg-light col-10">
+          <div class="card-body">
+            <h5 class="card-title">Instructions</h5>
+            <p class="card-text">
+            Which question is more understandable? 
+            </p>
+
+            <p class="card-text">
+            For example, a question may be less understandable if it
+            <ul>
+                <li>
+                has bad grammar and is not fluent English, like "man doing is what?" and "language spelled is this vehicle?"
+                </li>
+                <li>
+                is using words that don't make sense in context, like "what decor value is shown in focus?"
+                </li>
+                <li>
+                etc.
+                </li>
+            </ul>
+            </p>
+
+            <p class="card-text">
+            For each pair of questions shown below, click on the one that is <span class="text-danger">more understandable</span>.
+            Mark Equally understandable if both questions make sense or if both questions are not understandable.
+            </p>
+          </div>
+        </div>
+    </div>
+    <!--
+    <div class="row justify-content-center mb-2">
+        <p class="col-6 alert alert-danger text-center">If you don’t follow the instructions, your work will be rejected.</p>
+    </div>
+    -->
+
+    {% for pair in pair_data %}
+    {% set pairi = loop.index0 %}
+    <div id="pair{{pairi}}" class="row justify-content-center">
+        <input type="hidden" name="evalCode{{pairi}}" value="{{pair.eval_code}}">
+        <input type="hidden" name="batchIndex{{pairi}}" value="{{pair.batch_index}}">
+        <input type="hidden" name="exi{{pairi}}" value="{{pair.exi}}">
+        <input type="hidden" name="round{{pairi}}" value="{{pair.roundi}}">
+        <!-- dialog -->
+        <div class="card col-8 mb-2">
+          <div class="card-body row">
+            <div class="col-3 my-auto text-right">
+                The question
+            </div>
+            <div class="col-6">
+            {% for round in pair.rounds_by_model %}
+            {% set expi = loop.index0 %}
+            <label class="row d-flex btn btn-outline-secondary">
+                <div class="col-1">
+                    <input type="radio" name="model_options_{{pairi}}" value="{{expi}}">
+                    <input type="hidden" name="pair{{pairi}}-m{{expi}}-code" value="{{pair.exp_codes[expi]}}"/>
+                </div>
+                <div class="col">
+                    {{round.questions}}
+                </div>
+            </label>
+            {% endfor %}
+            <label class="row d-flex btn btn-outline-secondary">
+                <div class="col-1">
+                    <input type="radio" name="model_options_{{pairi}}" value="{{pair.rounds_by_model|length}}">
+                    <input type="hidden" name="pair{{pairi}}-neither-code" value="neither_{{pair.exp_codes|join('_')}}"/>
+                </div>
+                <div class="col">
+                    (Equally understandable)
+                </div>
+            </label>
+            </div>
+            <div class="col-3 my-auto">
+                is more understandable.
+            </div>
+          </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="row justify-content-center mb-2">
+        <button type="button" id="confirm" class="btn btn-outline-secondary">Finish HIT</button>
+    </div>
+    <div id="final-warning" class="d-none row justify-content-center mb-2">
+        <p class="col-6 alert alert-warning text-center">You must pick one question for each pair before submitting.</p>
+    </div>
+    <div id="comment-box" class="row mb-2">
+        <label>Comments are welcome!</label>
+        <input type="text" id="hitComment" name="hitComment" class="form-control" placeholder="Put any comments relevant to the HIT here. (Optional)">
+    </div>
+</div>
+
+</form>
+
+<script>
+    // MTurk meta-data
+    var hitID = gup('hitId');
+    var assignmentID = gup('assignmentId');
+    var workerID = gup('workerId');
+    $('#assignmentId').val(assignmentID);
+    $('#workerId').val(workerID);
+
+    // Disable interaction in preview mode
+    if (assignmentID == 'ASSIGNMENT_ID_NOT_AVAILABLE') {
+        $('#mturk_form :input').prop('disabled', true);
+    }
+
+    // Interface stuff
+    // Used in main to decide to submit form or not (i.e., not loaded via AMT).
+    var form = document.getElementById('mturk_form');
+    // Gets whether it is sandbox or real AMT (or nothing)
+    var service = decode(gup('turkSubmitTo'));
+
+    if (service.length > 0) {
+        form.action = service + '/mturk/externalSubmit';
+    } else {
+        form.action = '';
+    }
+    // Show / hide instructions
+    $('#instruction-toggle').on('click', function() {
+        $('#main-instructions').toggleClass('d-none');
+    });
+
+    // submit the HIT once the last image selection has occurred
+    $('#confirm').on('click', function(event) {
+        var num_selected = 0;
+        {% for pair in pair_data %}
+        {% set pairi = loop.index0 %}
+        num_selected += $('input[name=model_options_{{pairi}}]:checked').length;
+        {% endfor %}
+        if (num_selected < {{pair_data|length}}) {
+            $('#final-warning').toggleClass('d-none', false);
+            return;
+        }
+        $('#final-warning').toggleClass('d-none', true);
+        // record final selection
+        $('#mturk_form').submit();
+    });
+</script>
+</body>
+</html>

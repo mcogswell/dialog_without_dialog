@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>examples.html</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.7">
+
+<style>
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+</style>
+</head>
+
+<body>
+<table>
+    <thead>
+        <tr>
+            <th>  </th>
+            {% for key in keys %}
+            <th> {{key}} </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+    {% for ex in examples %}
+    <tr>
+        <td> {{ex.gt_ques}} <br>
+            <table>
+                <tr>
+                {% for img_uri in ex.img_uris %}
+                    <td>
+                    {{loop.index0}}
+                    {% if loop.index0 == ex.target %}
+                        (target) (ans: {{ex.answer}})
+                    {% endif %}
+                    <br>
+                    <img src="{{img_uri}}" height="256" width="256"></img>
+                    </td>
+                {% endfor %}
+                </tr>
+            </table>
+        </td>
+        {% for ques in ex.questions %}
+        <td> {{ques}} </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

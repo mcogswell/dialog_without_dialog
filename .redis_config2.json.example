@@ -1,0 +1,8 @@
+{
+    "password": "3R5TGJ2DXPzAexXoVg7xurM6AbctR4MdAKQHdWNSYfKs",
+    "replicas": [
+        ["asimo.cc.gatech.edu", 8996],
+        ["gideon.cc.gatech.edu", 8993],
+        ["smith.cc.gatech.edu", 8993]
+    ]
+}

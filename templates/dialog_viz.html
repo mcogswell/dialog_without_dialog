@@ -1,0 +1,141 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+{% macro show_pool_att(region_uris) -%}
+{{region_uris.length}}
+<table class="attention">
+    <tr>
+    {% for uri in region_uris %}
+        <td>
+        <img src="{{uri}}" height="50" width="50"></img>
+        </td>
+        {% if (loop.index0+1) % wrap_period == 0 and loop.index != loop.length %}
+        </tr><tr>
+        {% endif %}
+    {% endfor %}
+    </tr>
+</table>
+{%- endmacro %}
+  <meta charset="utf-8">
+  <title>examples.html</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.7">
+
+<style>
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+</style>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+
+<body>
+<h2>{{title}}</h2>
+<table>
+    <thead>
+        <tr>
+            <th>  </th>
+            {% for key in keys %}
+            <th> {{key}} </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+    {% for ex in examples %}
+    {% set exi = loop.index0 %}
+    <tr>
+        <td>
+            <div>
+            id: {{exi}}
+            </div>
+            <table>
+                <tr>
+                {% for img_uri in ex.img_uris %}
+                    <td>
+                    {{loop.index0}} 
+                    {% if loop.index0 == ex.target %}
+                        (target)
+                    {% endif %}
+                    <br>
+                    <img src="{{img_uri}}" height="164" width="164"></img>
+                    </td>
+                    {% if (loop.index0+1) % wrap_period == 0 and loop.index != loop.length %}
+                    </tr><tr>
+                    {% endif %}
+                {% endfor %}
+                </tr>
+            </table>
+        </td>
+        <td>
+        <table>
+            <thead>
+                <tr>
+                    <th> Round </th>
+                    <th> Q-bot </th>
+                    <th> A-bot </th>
+                </tr>
+            </thead>
+            {% for round in rounds %}
+            {% set roundi = loop.index0 %}
+            <tr>
+                <td> 
+                <b> R{{roundi}} </b>
+                </td> 
+                <td> 
+                    {% if roundi != 0 %}
+                        Pred: 
+                        {{round.preds[exi]}}
+                        {% if round.preds[exi] == ex.target %}
+                            (C)
+                        {% endif %} <br>
+                        <img class="attention" src="{{round.predict_uris[exi]}}"></img>
+                        {{show_pool_att(round.predict_region_uris[exi])}}
+                    {% endif %}
+                    Q: 
+                    {{round.questions[exi]}} <br>
+                    <img class="attention" src="{{round.pool_atten_uris[exi]}}"></img>
+                    {{show_pool_att(round.region_uris[exi])}}
+                </td>
+                <td>
+                    A: {{round.answers[exi]}} <br>
+                    <div class="attention">
+                    <img src="{{round.rel_uris[exi]}}"></img> <br>
+                    {{'%0.4f'|format(round.is_rel_probs[exi]|float)}} = p_relevant
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script>
+// https://html-online.com/articles/get-url-parameters-javascript/
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+function getUrlParam(parameter, defaultvalue){
+    var urlparameter = defaultvalue;
+    if(window.location.href.indexOf(parameter) > -1){
+        urlparameter = getUrlVars()[parameter];
+        }
+    return urlparameter;
+}
+
+
+var show_attention = getUrlParam('attention', 'true');
+if (show_attention == 'false') {
+    console.log('removing attention');
+    d3.selectAll('.attention').remove();
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css"/>
+        <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- Functions to help parse the URL query string for AMT data -->
+        <script>
+        function gup(name) {
+            var regexS = "[\\?&]" + name + "=([^&#]*)";
+            var regex = new RegExp(regexS);
+            var tmpURL = window.location.href;
+            var results = regex.exec(tmpURL);
+            if (results == null) {
+                return "";
+            } else {
+                return results[1];
+            }
+        }
+
+        function decode(strToDecode) {
+            return unescape(strToDecode.replace(/\+/g, " "));
+        }
+        </script>
+    </head>
+<body>
+
+<form id='mturk_form' action="MTURK_FORM_TO_SUBMIT" method="POST">
+    <input type="hidden" id="assignmentId" name="assignmentId" value='MTURK_ASSIGNMENT_ID'>
+    <input type="hidden" id="workerId" name="workerId" value='MTURK_WORKER_ID'>
+    <input type="hidden" name="numExamples" value="{{examples|length}}">
+
+<div class="container" id="main">
+    <div class="row justify-content-center mb-2">
+        <h3 class="col text-center">Please help us guess the image!</h3>
+    </div>
+    <div class="row justify-content-center mb-2">
+        <button type="button" id="instruction-toggle" class="btn btn-outline-secondary">Show / Hide Instructions</button>
+    </div>
+    <div class="row justify-content-center mb-2">
+        <div id="main-instructions" class="card col-10">
+          <div class="card-body">
+            <h5 class="card-title">Instructions</h5>
+            <p class="card-text">
+            Which image are the two bots talking about?
+            </p>
+
+            <p class="card-text">
+            Two bots (A-bot and Q-bot) have had a dialog about a secret image.
+            Q-bot didn't know which image was the secret image and was asking
+            questions to learn more about it. A-bot knew which image was the
+            secret image and was answering Q-bot's questions about it.
+            </p>
+
+            <p class="card-text">
+            We are showing you the dialog they had (Q-bot's questions and A-bot's answers).
+            These bots were still learning, so sometimes the language they used was
+            bizzare, ungrounded, or ungrammatical.
+            Furthermore, A-bot sometimes indicated that Q-bot's question was not
+            relevant to the secret image by saying "not relevant".
+            </p>
+
+            <p class="card-text">
+            Which of these 4 images do you think A-bot was looking at when answering the questions?
+            </p>
+          </div>
+        </div>
+    </div>
+    <div class="row justify-content-center mb-2">
+        <p class="col-6 alert alert-danger text-center">If you don’t follow the instructions, your work will be rejected.</p>
+    </div>
+
+    <!--
+    <div class="row justify-content-center mb-2">
+        <h5 class="col text-center">Dialog <span id="pool_id">1</span> / {{examples|length}}</h5>
+    </div>
+    -->
+    {% for ex in examples %}
+    {% set exi = loop.index0 %}
+    <div id="ex{{exi}}" class="row {%if exi != 0%}d-none{%endif%}">
+        <input type="hidden" name="expCode{{exi}}" value="{{ex.exp_code}}">
+        <input type="hidden" name="evalCode{{exi}}" value="{{ex.eval_code}}">
+        <input type="hidden" name="batchIndex{{exi}}" value="{{ex.batch_index}}">
+        <input type="hidden" name="exi{{exi}}" value="{{ex.exi}}">
+        <!-- image pool selection -->
+        <div class="col-sm-6 btn-group btn-group-toggle" data-toggle="buttons">
+            <div class="row">
+            {% for img_url in ex.img_urls %}
+                <label class="btn btn-outline-secondary">
+                    <input type="radio" name="pool_options" value="{{loop.index0}}">
+                    <img src="{{img_url}}" height="164" width="164" alt="pool image {{loop.index0}}">
+                </label>
+                {% if (loop.index0+1) % wrap_period == 0 and loop.index != loop.length %}
+                </div><div class="row">
+                {% endif %}
+            {% endfor %}
+            </div>
+        </div>
+        <!-- dialog -->
+        <div class="col-sm-6">
+            {% for round in rounds %}
+            {% set roundi = loop.index0 %}
+            <input type="hidden" id="ex{{exi}}-round{{roundi}}-selection" name="ex{{exi}}-round{{roundi}}-selection">
+            <div id="ex{{exi}}-round{{roundi}}" class="row">
+                <div class="col-md-2">
+                    <b> Round {{roundi}} </b>
+                </div>
+                <div class="col">
+                    Q: {{round.questions[exi]}} <br>
+                    A: {{round.answers[exi]}} <br>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="row justify-content-md-center mb-2">
+        <button type="button" id="confirm" class="d-none btn btn-outline-secondary">Finish HIT</button>
+        <button type="button" id="next" class="btn btn-outline-secondary">Next</button>
+    </div>
+    <div id="next-warning" class="d-none row justify-content-center mb-2">
+        <p class="col-6 alert alert-warning text-center">Select the target image before seeing the next round of dialog.</p>
+    </div>
+    <div id="final-warning" class="d-none row justify-content-center mb-2">
+        <p class="col-6 alert alert-warning text-center">You must select the target image for the last round before you can submit the HIT.</p>
+    </div>
+    <div id="preview-warning" class="d-none row justify-content-center mb-2">
+        <p class="col-6 alert alert-warning text-center">You will be able to proceed to more rounds of dialog after accepting the HIT.</p>
+    </div>
+    <div id="comment-box" class="d-none row mb-2">
+        <label>Comments are welcome!</label>
+        <input type="text" id="hitComment" name="hitComment" class="form-control" placeholder="Put any comments relevant to the HIT here. (Optional)">
+    </div>
+</div>
+
+</form>
+
+<script>
+    // MTurk meta-data
+    var hitID = gup('hitId');
+    var assignmentID = gup('assignmentId');
+    var workerID = gup('workerId');
+    $('#assignmentId').val(assignmentID);
+    $('#workerId').val(workerID);
+
+    // Interface stuff
+    // Used in main to decide to submit form or not (i.e., not loaded via AMT).
+    var form = document.getElementById('mturk_form');
+    // Gets whether it is sandbox or real AMT (or nothing)
+    var service = decode(gup('turkSubmitTo'));
+
+    if (service.length > 0) {
+        form.action = service + '/mturk/externalSubmit';
+    } else {
+        form.action = '';
+    }
+    // Show / hide instructions
+    $('#instruction-toggle').on('click', function() {
+        $('#main-instructions').toggleClass('d-none');
+    });
+
+    // Dialog stuff
+    var start_round = 4; // set to 0 to go round by round
+    var round = start_round;
+    var exi = 0;
+    var num_examples = {{examples|length}};
+    var maxRounds = {{rounds|length}};
+
+    // progress dialog one round
+    $('#next').on('click', function(event) {
+        var checked_input = $('input[name=pool_options]:checked');
+        var num_selected = checked_input.length;
+        // check to be sure we can advance the dialog
+        if (assignmentID == 'ASSIGNMENT_ID_NOT_AVAILABLE') {
+            $('#preview-warning').toggleClass('d-none', false);
+            return;
+        }
+        if (num_selected == 0) {
+            $('#next-warning').toggleClass('d-none', false);
+            return;
+        }
+
+        // record selection
+        $('#ex' + exi + '-round' + round + '-selection').val(checked_input.val());
+
+        $('#next-warning').toggleClass('d-none', true);
+        // if rounds remain, advance the interface by one round
+        if (round < maxRounds - 1) {
+            round += 1;
+            for (var i = 0; i <= round; i++) {
+                $('#ex' + exi + '-round' + i).toggleClass('d-none', false);
+            }
+            $('input[name=pool_options]').prop('checked', false);
+        // if examples remain, advance to the next example
+        } else if (round == maxRounds - 1 && exi < num_examples - 1) {
+            $('#ex' + exi).toggleClass('d-none', true);
+            exi += 1;
+            round = start_round;
+            $('#ex' + exi).toggleClass('d-none', false);
+            $('#pool_id').text((exi + 1).toString());
+        }
+        // nothing left, so allow comments and form submission
+        // NOTE: this should follow the previous increment of exi
+        if (round == maxRounds - 1 && exi == num_examples - 1) {
+            $('#next').toggleClass('d-none', true);
+            $('#confirm').toggleClass('d-none', false);
+            $('#comment-box').toggleClass('d-none', false);
+        }
+    });
+
+    if (round == maxRounds - 1 && exi == num_examples - 1) {
+        $('#next').toggleClass('d-none', true);
+        $('#confirm').toggleClass('d-none', false);
+        $('#comment-box').toggleClass('d-none', false);
+    }
+
+    // submit the HIT once the last image selection has occurred
+    $('#confirm').on('click', function(event) {
+        var checked_input = $('input[name=pool_options]:checked');
+        var num_selected = checked_input.length;
+        if (num_selected == 0) {
+            $('#final-warning').toggleClass('d-none', false);
+            return;
+        }
+        $('#final-warning').toggleClass('d-none', true);
+
+        // record final selection
+        $('#ex' + exi + '-round' + round + '-selection').val(checked_input.val());
+        $('#mturk_form').submit();
+    });
+</script>
+</body>
+</html>

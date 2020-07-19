@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# vim
+**.swp
+**.swo
+
+# jupyter notebook
+.ipynb_checkpoints/
+
+# logs and checkpoints
+slurm*.out
+# symlink
+logs
+logs.old
+data/experiments
+# directory
+logs/
+logs.old/
+checkpoints/
+.data/
+data/experiments/
+data/pool_info.pkl
+data/VQA
+
+doit.sh
+.visdom_config.json
+examples.html
+dialog_examples.html
+misc/memory_store/redis_6379.pid
+.redis_config.json
+.redis_config2.json
+start_memory_store_server.sh
+dump.rdb
+
+coco-caption/annotations
+coco-caption/annotations/
+
+.mturk_keys.json

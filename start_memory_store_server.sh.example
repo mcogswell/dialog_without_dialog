@@ -1,0 +1,16 @@
+#!/bin/sh
+# install redis:
+# conda install redis redis-py
+# conda install -c binstar redis-server
+#redis-server misc/memory_store/redis.conf
+#srun -w asimo -p long redis-server misc/memory_store/redis.conf --port 8996
+#srun -w gideon -p long redis-server misc/memory_store/redis.conf --port 8993 --replicaof asimo 8996
+#.... start new replicas on new machines
+# Note that the replication process writes the redis db to disk in the current
+# directory, so the directory should have that amount of slack in it.
+# steps:
+# 1. in a new tmux, go to projects/dialog_without_dialog/ and activate the `dialog` conda environment
+# 2. add a new line to this file with -w <new node> and --replicaof <some existing node> <that node's port>
+# 3. start the new redis server by calling `start_redis_memory_store_server.sh` (from any machine, since it runs the job via slurm)
+# 4. AFTER the new node is finished copying the dataset, update .redis_config2.json by adding a new line for the new node (get the json commas right!)
+#    this line indicates the copy is done: MASTER <-> REPLICA sync: Master accepted a Partial Resynchronization.
