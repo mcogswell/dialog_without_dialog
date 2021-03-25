@@ -189,3 +189,9 @@ following figure.
 ![main results](images/table1.png)
 
 The above commands and experiment codes can be used to train and analyze the same models reported in this paper.
+
+* Note: Row D2 of the above table was an outlier in previous versions of the
+table. In running some of our analysis again we found an error in this row
+and provide an updated version in the current version of the table shown above.
+The updated version is more consistent with the trends we observed in the rest
+of the table.
